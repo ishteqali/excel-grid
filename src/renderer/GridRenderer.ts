@@ -20,8 +20,8 @@ export class GridRenderer {
   }
   public render(): void {
     this.clear();
+    this.drawGridBody();
     this.drawHeadersBackground();
-    this.drawGridLines();
     this.drawColumnHeaders();
     this.drawRowHeaders();
   }
@@ -30,6 +30,7 @@ export class GridRenderer {
     this.context.fillStyle = "#ffffff";
     this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
+
   private drawHeadersBackground(): void {
     this.context.fillStyle = "#f3f3f3";
     // Column Header Background
@@ -84,6 +85,15 @@ export class GridRenderer {
     this.context.stroke();
   }
   private drawColumnHeaders(): void {
+    this.context.save();
+    this.context.rect(
+      GridConfig.HEADER_WIDTH,
+      0,
+      this.canvas.width - GridConfig.HEADER_WIDTH,
+      GridConfig.HEADER_HEIGHT,
+    );
+    this.context.clip();
+
     this.context.fillStyle = "#000000";
     this.context.font = "14px Calibri, Arial, sans-serif";
     this.context.textAlign = "center";
@@ -104,6 +114,7 @@ export class GridRenderer {
       x = x + GridConfig.DEFAULT_COLUMN_WIDTH;
       columnIndex++;
     }
+    this.context.restore();
   }
   private getColumnName(columnIndex: number): string {
     let columnName = "";
@@ -118,6 +129,16 @@ export class GridRenderer {
     return columnName;
   }
   private drawRowHeaders(): void {
+    this.context.save();
+    this.context.beginPath();
+    this.context.rect(
+      0,
+      GridConfig.HEADER_HEIGHT,
+      GridConfig.HEADER_WIDTH,
+      this.canvas.height - GridConfig.HEADER_HEIGHT,
+    );
+    this.context.clip();
+
     this.context.fillStyle = "#000000";
     this.context.font = "14px Calibri, Arial, sans-serif";
     this.context.textAlign = "center";
@@ -139,5 +160,24 @@ export class GridRenderer {
       y = y + GridConfig.DEFAULT_ROW_HEIGHT;
       rowIndex++;
     }
+    this.context.restore();
+  }
+  private clipGridBody(): void {
+    this.context.beginPath();
+
+    this.context.rect(
+      GridConfig.HEADER_WIDTH,
+      GridConfig.HEADER_HEIGHT,
+      this.canvas.width - GridConfig.HEADER_WIDTH,
+      this.canvas.height - GridConfig.HEADER_HEIGHT,
+    );
+
+    this.context.clip();
+  }
+  private drawGridBody(): void {
+    this.context.save();
+    this.clipGridBody();
+    this.drawGridLines();
+    this.context.restore();
   }
 }
