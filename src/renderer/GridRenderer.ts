@@ -86,18 +86,8 @@ export class GridRenderer {
   }
   private drawColumnHeaders(): void {
     this.context.save();
-    this.context.rect(
-      GridConfig.HEADER_WIDTH,
-      0,
-      this.canvas.width - GridConfig.HEADER_WIDTH,
-      GridConfig.HEADER_HEIGHT,
-    );
-    this.context.clip();
-
-    this.context.fillStyle = "#000000";
-    this.context.font = "14px Calibri, Arial, sans-serif";
-    this.context.textAlign = "center";
-    this.context.textBaseline = "middle";
+    this.applyColumnHeaderClip();
+    this.headerOptions();
 
     const firstVisibleColumn = this.viewportManager.getFirstVisibleColumn();
     const columnOffset = this.viewportManager.getColumnOffset();
@@ -130,19 +120,8 @@ export class GridRenderer {
   }
   private drawRowHeaders(): void {
     this.context.save();
-    this.context.beginPath();
-    this.context.rect(
-      0,
-      GridConfig.HEADER_HEIGHT,
-      GridConfig.HEADER_WIDTH,
-      this.canvas.height - GridConfig.HEADER_HEIGHT,
-    );
-    this.context.clip();
-
-    this.context.fillStyle = "#000000";
-    this.context.font = "14px Calibri, Arial, sans-serif";
-    this.context.textAlign = "center";
-    this.context.textBaseline = "middle";
+    this.applyRowHeaderClip();
+    this.headerOptions();
 
     const firstVisibleRow = this.viewportManager.getFirstVisibleRow();
     const rowOffset = this.viewportManager.getRowOffset();
@@ -161,6 +140,39 @@ export class GridRenderer {
       rowIndex++;
     }
     this.context.restore();
+  }
+
+  private applyColumnHeaderClip(): void {
+    this.context.beginPath();
+
+    this.context.rect(
+      GridConfig.HEADER_WIDTH,
+      0,
+      this.canvas.width - GridConfig.HEADER_WIDTH,
+      GridConfig.HEADER_HEIGHT,
+    );
+
+    this.context.clip();
+  }
+
+  private applyRowHeaderClip(): void {
+    this.context.beginPath();
+
+    this.context.rect(
+      0,
+      GridConfig.HEADER_HEIGHT,
+      GridConfig.HEADER_WIDTH,
+      this.canvas.height - GridConfig.HEADER_HEIGHT,
+    );
+
+    this.context.clip();
+  }
+
+  private headerOptions(): void {
+    this.context.fillStyle = "#000000";
+    this.context.font = "14px Calibri, Arial, sans-serif";
+    this.context.textAlign = "center";
+    this.context.textBaseline = "middle";
   }
   private clipGridBody(): void {
     this.context.beginPath();

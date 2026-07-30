@@ -10,4 +10,8 @@ export class GridConfig {
   static readonly HEADER_HEIGHT = 30;
 
   static readonly HEADER_WIDTH = 60;
+
+  static readonly MIN_ROW_HEIGHT = 18;
+
+  static readonly MIN_COLUMN_WIDTH = 40
 }

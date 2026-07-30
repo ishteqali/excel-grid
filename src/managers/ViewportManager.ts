@@ -1,12 +1,15 @@
 import { GridConfig } from "../config/GridConfig";
+import { DimensionManager } from "./DimensionManager";
 
 export class ViewportManager {
   private scrollX: number;
   private scrollY: number;
+  private readonly dimensionManager: DimensionManager;
 
-  constructor() {
+  constructor(dimensionManager: DimensionManager) {
     this.scrollX = 0;
     this.scrollY = 0;
+    this.dimensionManager = dimensionManager;
   }
 
   public setScrollPosition(scrollX: number, scrollY: number): void {
