@@ -14,4 +14,6 @@ export class GridConfig {
   static readonly MIN_ROW_HEIGHT = 18;
 
   static readonly MIN_COLUMN_WIDTH = 40
+
+  static readonly CELL_PADDING = 6;
 }

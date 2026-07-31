@@ -52,7 +52,7 @@ export class DimensionManager {
       existingColumn.setWidth(validWidth);
       return;
     }
-    const column = new ColumnModel(columnIndex, validWidth);
+    const column = new ColumnModel(columnIndex, "id", validWidth); // Todo: after completing dataloading and cell selection will implement cell resizing
     this.columns.set(columnIndex, column);
   }
 }

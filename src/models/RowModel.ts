@@ -1,6 +1,7 @@
 export class RowModel {
   private readonly index: number;
   private height: number;
+  
   constructor(index: number, height: number) {
     this.index = index;
     this.height = height;

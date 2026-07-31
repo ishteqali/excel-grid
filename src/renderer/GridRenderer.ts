@@ -1,11 +1,18 @@
 import { GridConfig } from "../config/GridConfig";
 import { ViewportManager } from "../managers/ViewportManager";
+import { GridDataStore } from "../data/GridDataStore";
 
 export class GridRenderer {
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
-  private viewportManager: ViewportManager;
-  constructor(canvas: HTMLCanvasElement, viewportManager: ViewportManager) {
+  private readonly canvas: HTMLCanvasElement;
+  private readonly context: CanvasRenderingContext2D;
+  private readonly viewportManager: ViewportManager;
+  private readonly dataStore: GridDataStore;
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    viewportManager: ViewportManager,
+    dataStore: GridDataStore,
+  ) {
     this.canvas = canvas;
     this.viewportManager = viewportManager;
     const context = canvas.getContext("2d");
@@ -13,6 +20,7 @@ export class GridRenderer {
       throw new Error("Unable to get canvas context");
     }
     this.context = context;
+    this.dataStore = dataStore;
   }
   public resize(width: number, height: number): void {
     this.canvas.width = width;
@@ -190,6 +198,46 @@ export class GridRenderer {
     this.context.save();
     this.clipGridBody();
     this.drawGridLines();
+    this.drawCellContents();
     this.context.restore();
+  }
+
+  private drawCellContents(): void {
+    this.context.fillStyle = "#000000";
+    this.context.font = "14px Calibri, Arial, sans-serif";
+    this.context.textAlign = "left";
+    this.context.textBaseline = "middle";
+
+    const firstVisibleRow = this.viewportManager.getFirstVisibleRow();
+    const firstVisibleColumn = this.viewportManager.getFirstVisibleColumn();
+
+    const rowOffset = this.viewportManager.getRowOffset();
+    const columnOffset = this.viewportManager.getColumnOffset();
+
+    let rowIndex = firstVisibleRow;
+    let y = GridConfig.HEADER_HEIGHT - rowOffset;
+
+    while (y < this.canvas.height && rowIndex < GridConfig.ROW_COUNT) {
+      let columnIndex = firstVisibleColumn;
+      let x = GridConfig.HEADER_WIDTH - columnOffset;
+
+      while (x < this.canvas.width && columnIndex < GridConfig.COLUMN_COUNT) {
+        const value = this.dataStore.getCellValue(rowIndex, columnIndex);
+
+        if (value !== null) {
+          this.context.fillText(
+            String(value),
+            x + GridConfig.CELL_PADDING,
+            y + GridConfig.DEFAULT_ROW_HEIGHT / 2,
+          );
+        }
+
+        x += GridConfig.DEFAULT_COLUMN_WIDTH;
+        columnIndex++;
+      }
+
+      y += GridConfig.DEFAULT_ROW_HEIGHT;
+      rowIndex++;
+    }
   }
 }
