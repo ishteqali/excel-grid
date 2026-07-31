@@ -246,40 +246,47 @@ export class GridRenderer {
     }
   }
   private drawSelection(): void {
-    const selectedCell = this.selectionManager.getSelectedCell();
+    const range = this.selectionManager.getSelectionRange();
 
-    if (!selectedCell) {
+    if (!range) {
       return;
     }
 
-    const rowIndex = selectedCell.getRowIndex();
-    const columnIndex = selectedCell.getColumnIndex();
+    const startRow = range.getStartRow();
+    const endRow = range.getEndRow();
+    const startColumn = range.getStartColumn();
+    const endColumn = range.getEndColumn();
 
     const x =
       GridConfig.HEADER_WIDTH +
-      columnIndex * GridConfig.DEFAULT_COLUMN_WIDTH -
+      startColumn * GridConfig.DEFAULT_COLUMN_WIDTH -
       this.viewportManager.getScrollX();
 
     const y =
       GridConfig.HEADER_HEIGHT +
-      rowIndex * GridConfig.DEFAULT_ROW_HEIGHT -
+      startRow * GridConfig.DEFAULT_ROW_HEIGHT -
       this.viewportManager.getScrollY();
+
+    const width =
+      (endColumn - startColumn + 1) * GridConfig.DEFAULT_COLUMN_WIDTH;
+
+    const height = (endRow - startRow + 1) * GridConfig.DEFAULT_ROW_HEIGHT;
 
     this.context.strokeStyle = "#107c41";
     this.context.lineWidth = 2;
-    this.context.fillStyle = "#c3f3d9";
+    this.context.fillStyle = "rgba(195, 243, 217,0.5)";
     this.context.fillRect(
       x,
       y,
-      GridConfig.DEFAULT_COLUMN_WIDTH,
-      GridConfig.DEFAULT_ROW_HEIGHT,
+      width,
+      height,
     );
 
     this.context.strokeRect(
       x,
       y,
-      GridConfig.DEFAULT_COLUMN_WIDTH,
-      GridConfig.DEFAULT_ROW_HEIGHT,
+      width,
+      height,
     );
   }
 }

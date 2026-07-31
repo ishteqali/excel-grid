@@ -2,6 +2,7 @@ import { GridConfig } from "../config/GridConfig";
 import { ViewportManager } from "../managers/ViewportManager";
 import { GridRenderer } from "../renderer/GridRenderer";
 import { SelectionManager } from "../managers/SelectionManager";
+import type { CellPosition } from "../models/CellPosition";
 
 export class Grid {
   private readonly renderer: GridRenderer;
@@ -10,6 +11,9 @@ export class Grid {
   private readonly scrollContent: HTMLElement;
   private readonly selectionManager: SelectionManager;
   private readonly canvas: HTMLCanvasElement;
+
+  private isSelecting: boolean;
+  private selectionStart: CellPosition | null;
 
   constructor(
     renderer: GridRenderer,
@@ -25,6 +29,8 @@ export class Grid {
     this.scrollContent = scrollContent;
     this.selectionManager = selectionManager;
     this.canvas = canvas;
+    this.isSelecting = false;
+    this.selectionStart = null;
   }
 
   public initialize(): void {
@@ -36,7 +42,13 @@ export class Grid {
   private attachEventListeners(): void {
     this.container.addEventListener("scroll", this.handleScroll);
     window.addEventListener("resize", this.handleResize);
-    this.canvas.addEventListener("click", this.handleClick);
+    this.addMouseEventListerener();
+  }
+
+  private addMouseEventListerener(): void {
+    this.canvas.addEventListener("mousedown", this.handleMouseDown);
+    this.canvas.addEventListener("mousemove", this.handleMouseMove);
+    window.addEventListener("mouseup", this.handleMouseUp);
   }
 
   private setupVirtualScrollSpace(): void {
@@ -74,22 +86,48 @@ export class Grid {
     this.renderer.render();
   }
 
-  private handleClick = (event: MouseEvent): void => {
+  private getCellFromMouseEvent(event: MouseEvent): CellPosition | null {
     const rect = this.canvas.getBoundingClientRect();
-
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    const cellPosition = this.viewportManager.getCellAtPoint(x, y);
+    return this.viewportManager.getCellAtPoint(x, y);
+  }
+
+  private handleMouseDown = (event: MouseEvent): void => {
+    const cellPosition = this.getCellFromMouseEvent(event);
+
     if (!cellPosition) {
       return;
     }
+
+    this.isSelecting = true;
+    this.selectionStart = cellPosition;
 
     this.selectionManager.selectCell(
       cellPosition.getRowIndex(),
       cellPosition.getColumnIndex(),
     );
-    console.log(cellPosition.getRowIndex(), cellPosition.getColumnIndex());
+
     this.renderer.render();
+  };
+
+  private handleMouseMove = (event: MouseEvent): void => {
+    if (!this.isSelecting || !this.selectionStart) {
+      return;
+    }
+
+    const currentCell = this.getCellFromMouseEvent(event);
+    if (!currentCell) {
+      return;
+    }
+    this.selectionManager.selectRange(this.selectionStart, currentCell);
+
+    this.renderer.render();
+  };
+
+  private handleMouseUp = (): void => {
+    this.isSelecting = false;
+    this.selectionStart = null;
   };
 }

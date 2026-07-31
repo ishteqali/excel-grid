@@ -1,20 +1,26 @@
 import { CellPosition } from "../models/CellPosition";
+import { CellRange } from "../models/CellRange";
 
 export class SelectionManager {
-  private selectedCell: CellPosition | null;
+  private selectionRange: CellRange | null;
   constructor() {
-    this.selectedCell = null;
+    this.selectionRange = null;
   }
 
   public selectCell(rowIndex: number, columnIndex: number): void {
-    this.selectedCell = new CellPosition(rowIndex, columnIndex);
+    const position = new CellPosition(rowIndex, columnIndex);
+    this.selectionRange = new CellRange(position, position);
   }
 
-  public getSelectedCell(): CellPosition | null {
-    return this.selectedCell;
+  public selectRange(start: CellPosition, end: CellPosition) {
+    this.selectionRange = new CellRange(start, end);
+  }
+
+  public getSelectionRange(): CellRange | null {
+    return this.selectionRange;
   }
 
   public clearSelection(): void {
-    this.selectedCell = null;
+    this.selectionRange = null;
   }
 }
