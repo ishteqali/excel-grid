@@ -1,5 +1,6 @@
 import { GridConfig } from "../config/GridConfig";
 import { DimensionManager } from "./DimensionManager";
+import { CellPosition } from "../models/CellPosition";
 
 export class ViewportManager {
   private scrollX: number;
@@ -51,5 +52,25 @@ export class ViewportManager {
 
   public getColumnOffset(): number {
     return this.scrollX % GridConfig.DEFAULT_COLUMN_WIDTH;
+  }
+
+  public getCellAtPoint(x: number, y: number): CellPosition | null {
+    if (x < GridConfig.HEADER_WIDTH || y < GridConfig.HEADER_HEIGHT) {
+      return null;
+    }
+
+    const gridX = x - GridConfig.HEADER_WIDTH + this.scrollX;
+    const gridY = y - GridConfig.HEADER_HEIGHT + this.scrollY;
+
+    const columnIndex = Math.floor(gridX / GridConfig.DEFAULT_COLUMN_WIDTH);
+    const rowIndex = Math.floor(gridY / GridConfig.DEFAULT_ROW_HEIGHT);
+
+    if (
+      rowIndex >= GridConfig.ROW_COUNT ||
+      columnIndex >= GridConfig.COLUMN_COUNT
+    ) {
+      return null;
+    }
+    return new CellPosition(rowIndex, columnIndex);
   }
 }

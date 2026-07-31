@@ -1,17 +1,20 @@
 import { GridConfig } from "../config/GridConfig";
 import { ViewportManager } from "../managers/ViewportManager";
 import { GridDataStore } from "../data/GridDataStore";
+import type { SelectionManager } from "../managers/SelectionManager";
 
 export class GridRenderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly context: CanvasRenderingContext2D;
   private readonly viewportManager: ViewportManager;
   private readonly dataStore: GridDataStore;
+  private readonly selectionManager: SelectionManager;
 
   constructor(
     canvas: HTMLCanvasElement,
     viewportManager: ViewportManager,
     dataStore: GridDataStore,
+    selectionManager: SelectionManager,
   ) {
     this.canvas = canvas;
     this.viewportManager = viewportManager;
@@ -21,6 +24,7 @@ export class GridRenderer {
     }
     this.context = context;
     this.dataStore = dataStore;
+    this.selectionManager = selectionManager;
   }
   public resize(width: number, height: number): void {
     this.canvas.width = width;
@@ -198,6 +202,7 @@ export class GridRenderer {
     this.context.save();
     this.clipGridBody();
     this.drawGridLines();
+    this.drawSelection();
     this.drawCellContents();
     this.context.restore();
   }
@@ -239,5 +244,42 @@ export class GridRenderer {
       y += GridConfig.DEFAULT_ROW_HEIGHT;
       rowIndex++;
     }
+  }
+  private drawSelection(): void {
+    const selectedCell = this.selectionManager.getSelectedCell();
+
+    if (!selectedCell) {
+      return;
+    }
+
+    const rowIndex = selectedCell.getRowIndex();
+    const columnIndex = selectedCell.getColumnIndex();
+
+    const x =
+      GridConfig.HEADER_WIDTH +
+      columnIndex * GridConfig.DEFAULT_COLUMN_WIDTH -
+      this.viewportManager.getScrollX();
+
+    const y =
+      GridConfig.HEADER_HEIGHT +
+      rowIndex * GridConfig.DEFAULT_ROW_HEIGHT -
+      this.viewportManager.getScrollY();
+
+    this.context.strokeStyle = "#107c41";
+    this.context.lineWidth = 2;
+    this.context.fillStyle = "#c3f3d9";
+    this.context.fillRect(
+      x,
+      y,
+      GridConfig.DEFAULT_COLUMN_WIDTH,
+      GridConfig.DEFAULT_ROW_HEIGHT,
+    );
+
+    this.context.strokeRect(
+      x,
+      y,
+      GridConfig.DEFAULT_COLUMN_WIDTH,
+      GridConfig.DEFAULT_ROW_HEIGHT,
+    );
   }
 }
