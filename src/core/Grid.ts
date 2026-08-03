@@ -95,6 +95,24 @@ export class Grid {
   }
 
   private handleMouseDown = (event: MouseEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    if (this.viewportManager.isRowHeader(x, y)) {
+      const rowIndex = this.viewportManager.getRowAtPoint(y);
+      this.selectionManager.selectRow(rowIndex);
+      this.renderer.render();
+      return;
+    }
+    if (this.viewportManager.isColumnHeader(x, y)) {
+      const columnIndex = this.viewportManager.getColumnPoint(x);
+      this.selectionManager.selectColumn(columnIndex);
+      this.renderer.render();
+      return;
+    }
+
     const cellPosition = this.getCellFromMouseEvent(event);
 
     if (!cellPosition) {

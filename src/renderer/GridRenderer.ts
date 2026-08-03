@@ -246,9 +246,41 @@ export class GridRenderer {
     }
   }
   private drawSelection(): void {
+    const selectionType = this.selectionManager.getSelectionType();
     const range = this.selectionManager.getSelectionRange();
 
     if (!range) {
+      return;
+    }
+
+    if (selectionType === "Row") {
+      const row = range.getStartRow();
+      const y =
+        GridConfig.HEADER_HEIGHT +
+        row * GridConfig.DEFAULT_ROW_HEIGHT -
+        this.viewportManager.getScrollY();
+
+      this.styleSelection(
+        GridConfig.HEADER_WIDTH,
+        y,
+        this.canvas.width - GridConfig.HEADER_WIDTH,
+        GridConfig.DEFAULT_ROW_HEIGHT,
+      );
+      return;
+    }
+    if (selectionType === "Column") {
+      const column = range.getStartColumn();
+      const x =
+        GridConfig.HEADER_WIDTH +
+        column * GridConfig.DEFAULT_COLUMN_WIDTH -
+        this.viewportManager.getScrollX();
+
+      this.styleSelection(
+        x,
+        GridConfig.HEADER_HEIGHT,
+        GridConfig.DEFAULT_COLUMN_WIDTH,
+        this.canvas.height - GridConfig.HEADER_HEIGHT,
+      );
       return;
     }
 
@@ -271,12 +303,14 @@ export class GridRenderer {
       (endColumn - startColumn + 1) * GridConfig.DEFAULT_COLUMN_WIDTH;
 
     const height = (endRow - startRow + 1) * GridConfig.DEFAULT_ROW_HEIGHT;
+    this.styleSelection(x, y, width, height);
+  }
 
+  private styleSelection(x: number, y: number, width: number, height: number) {
     this.context.strokeStyle = GridConfig.SELECTION_BORDER_COLOR;
     this.context.lineWidth = 2;
     this.context.fillStyle = GridConfig.SELECTION_BACKGROUND_COLOR;
     this.context.fillRect(x, y, width, height);
-
     this.context.strokeRect(x, y, width, height);
   }
 }

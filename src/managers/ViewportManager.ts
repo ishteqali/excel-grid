@@ -73,4 +73,26 @@ export class ViewportManager {
     }
     return new CellPosition(rowIndex, columnIndex);
   }
+
+  public getRowAtPoint(y: number): number {
+    const gridY = y - GridConfig.HEADER_HEIGHT + this.scrollY;
+    return Math.floor(gridY / GridConfig.DEFAULT_ROW_HEIGHT);
+  }
+
+  public getColumnPoint(x: number): number {
+    const gridX = x - GridConfig.HEADER_WIDTH + this.scrollX;
+    return Math.floor(gridX / GridConfig.DEFAULT_COLUMN_WIDTH);
+  }
+
+  public isRowHeader(x: number, y: number): boolean {
+    return x < GridConfig.HEADER_WIDTH && y >= GridConfig.HEADER_HEIGHT;
+  }
+
+  public isColumnHeader(x: number, y: number): boolean {
+    return x >= GridConfig.HEADER_WIDTH && y < GridConfig.HEADER_HEIGHT;
+  }
+
+  public isCornerHeader(x: number, y: number): boolean {
+    return x < GridConfig.HEADER_WIDTH && y < GridConfig.HEADER_HEIGHT;
+  }
 }
