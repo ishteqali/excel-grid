@@ -39,12 +39,12 @@ export class GridRenderer {
   }
   private clear(): void {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.context.fillStyle = "#ffffff";
+    this.context.fillStyle = GridConfig.CANVAS_BACKGROUND_COLOR;
     this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   private drawHeadersBackground(): void {
-    this.context.fillStyle = "#f3f3f3";
+    this.context.fillStyle = GridConfig.HEADERS_BACKGROUND_COLOR;
     // Column Header Background
     this.context.fillRect(
       GridConfig.HEADER_WIDTH,
@@ -69,7 +69,7 @@ export class GridRenderer {
   }
 
   private drawGridLines(): void {
-    this.context.strokeStyle = "#d9d9d9";
+    this.context.strokeStyle = GridConfig.GRID_LINES_COLOR;
     this.context.lineWidth = 1;
     this.drawHorizontalLines();
     this.drawVerticalLines();
@@ -181,7 +181,7 @@ export class GridRenderer {
   }
 
   private headerOptions(): void {
-    this.context.fillStyle = "#000000";
+    this.context.fillStyle = GridConfig.TEXT_COLOR;
     this.context.font = "14px Calibri, Arial, sans-serif";
     this.context.textAlign = "center";
     this.context.textBaseline = "middle";
@@ -208,7 +208,7 @@ export class GridRenderer {
   }
 
   private drawCellContents(): void {
-    this.context.fillStyle = "#000000";
+    this.context.fillStyle = GridConfig.TEXT_COLOR;
     this.context.font = "14px Calibri, Arial, sans-serif";
     this.context.textAlign = "left";
     this.context.textBaseline = "middle";
@@ -272,21 +272,11 @@ export class GridRenderer {
 
     const height = (endRow - startRow + 1) * GridConfig.DEFAULT_ROW_HEIGHT;
 
-    this.context.strokeStyle = "#107c41";
+    this.context.strokeStyle = GridConfig.SELECTION_BORDER_COLOR;
     this.context.lineWidth = 2;
-    this.context.fillStyle = "rgba(195, 243, 217,0.5)";
-    this.context.fillRect(
-      x,
-      y,
-      width,
-      height,
-    );
+    this.context.fillStyle = GridConfig.SELECTION_BACKGROUND_COLOR;
+    this.context.fillRect(x, y, width, height);
 
-    this.context.strokeRect(
-      x,
-      y,
-      width,
-      height,
-    );
+    this.context.strokeRect(x, y, width, height);
   }
 }

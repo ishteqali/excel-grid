@@ -13,7 +13,19 @@ export class GridConfig {
 
   static readonly MIN_ROW_HEIGHT = 18;
 
-  static readonly MIN_COLUMN_WIDTH = 40
+  static readonly MIN_COLUMN_WIDTH = 40;
 
   static readonly CELL_PADDING = 6;
+
+  static readonly CANVAS_BACKGROUND_COLOR = "#ffffff";
+
+  static readonly GRID_LINES_COLOR = "#d9d9d9";
+
+  static readonly HEADERS_BACKGROUND_COLOR = "#f3f3f3";
+
+  static readonly TEXT_COLOR = "#000000";
+
+  static readonly SELECTION_BORDER_COLOR = "#107c41";
+
+  static readonly SELECTION_BACKGROUND_COLOR = "rgba(195, 243, 217,0.5)";
 }
