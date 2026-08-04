@@ -10,6 +10,9 @@ export class GridRenderer {
   private readonly dataStore: GridDataStore;
   private readonly selectionManager: SelectionManager;
 
+  private viewportWidth: number;
+  private viewportHeight: number;
+
   constructor(
     canvas: HTMLCanvasElement,
     viewportManager: ViewportManager,
@@ -25,10 +28,22 @@ export class GridRenderer {
     this.context = context;
     this.dataStore = dataStore;
     this.selectionManager = selectionManager;
+    this.viewportWidth = 0;
+    this.viewportHeight = 0;
   }
   public resize(width: number, height: number): void {
-    this.canvas.width = width;
-    this.canvas.height = height;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
+
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
+    this.context.scale(dpr, dpr);
   }
   public render(): void {
     this.clear();
@@ -38,9 +53,9 @@ export class GridRenderer {
     this.drawRowHeaders();
   }
   private clear(): void {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
     this.context.fillStyle = GridConfig.CANVAS_BACKGROUND_COLOR;
-    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
   }
 
   private drawHeadersBackground(): void {
@@ -49,7 +64,7 @@ export class GridRenderer {
     this.context.fillRect(
       GridConfig.HEADER_WIDTH,
       0,
-      this.canvas.width - GridConfig.HEADER_WIDTH,
+      this.viewportWidth - GridConfig.HEADER_WIDTH,
       GridConfig.HEADER_HEIGHT,
     );
     // Row Header Background
@@ -57,7 +72,7 @@ export class GridRenderer {
       0,
       GridConfig.HEADER_HEIGHT,
       GridConfig.HEADER_WIDTH,
-      this.canvas.height - GridConfig.HEADER_HEIGHT,
+      this.viewportHeight - GridConfig.HEADER_HEIGHT,
     );
     // Top Left Intersection
     this.context.fillRect(
@@ -78,9 +93,9 @@ export class GridRenderer {
     const rowOffset = this.viewportManager.getRowOffset();
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
     this.context.beginPath();
-    while (y <= this.canvas.height) {
+    while (y <= this.viewportHeight) {
       this.context.moveTo(GridConfig.HEADER_WIDTH, y);
-      this.context.lineTo(this.canvas.width, y);
+      this.context.lineTo(this.viewportWidth, y);
       y = y + GridConfig.DEFAULT_ROW_HEIGHT;
     }
     this.context.stroke();
@@ -89,9 +104,9 @@ export class GridRenderer {
     const columnOffset = this.viewportManager.getColumnOffset();
     let x = GridConfig.HEADER_WIDTH - columnOffset;
     this.context.beginPath();
-    while (x <= this.canvas.width) {
+    while (x <= this.viewportWidth) {
       this.context.moveTo(x, GridConfig.HEADER_HEIGHT);
-      this.context.lineTo(x, this.canvas.height);
+      this.context.lineTo(x, this.viewportHeight);
       x = x + GridConfig.DEFAULT_COLUMN_WIDTH;
     }
     this.context.stroke();
@@ -106,7 +121,7 @@ export class GridRenderer {
 
     let columnIndex = firstVisibleColumn;
     let x = GridConfig.HEADER_WIDTH - columnOffset;
-    while (x < this.canvas.width && columnIndex < GridConfig.COLUMN_COUNT) {
+    while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
       const columnName = this.getColumnName(columnIndex);
       this.context.fillText(
         columnName,
@@ -141,7 +156,7 @@ export class GridRenderer {
     let rowIndex = firstVisibleRow;
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
-    while (y < this.canvas.height && rowIndex < GridConfig.ROW_COUNT) {
+    while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
       this.context.fillText(
         (rowIndex + 1).toString(),
         GridConfig.HEADER_WIDTH / 2,
@@ -160,7 +175,7 @@ export class GridRenderer {
     this.context.rect(
       GridConfig.HEADER_WIDTH,
       0,
-      this.canvas.width - GridConfig.HEADER_WIDTH,
+      this.viewportWidth - GridConfig.HEADER_WIDTH,
       GridConfig.HEADER_HEIGHT,
     );
 
@@ -174,7 +189,7 @@ export class GridRenderer {
       0,
       GridConfig.HEADER_HEIGHT,
       GridConfig.HEADER_WIDTH,
-      this.canvas.height - GridConfig.HEADER_HEIGHT,
+      this.viewportHeight - GridConfig.HEADER_HEIGHT,
     );
 
     this.context.clip();
@@ -192,8 +207,8 @@ export class GridRenderer {
     this.context.rect(
       GridConfig.HEADER_WIDTH,
       GridConfig.HEADER_HEIGHT,
-      this.canvas.width - GridConfig.HEADER_WIDTH,
-      this.canvas.height - GridConfig.HEADER_HEIGHT,
+      this.viewportWidth - GridConfig.HEADER_WIDTH,
+      this.viewportHeight - GridConfig.HEADER_HEIGHT,
     );
 
     this.context.clip();
@@ -222,11 +237,11 @@ export class GridRenderer {
     let rowIndex = firstVisibleRow;
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
-    while (y < this.canvas.height && rowIndex < GridConfig.ROW_COUNT) {
+    while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
       let columnIndex = firstVisibleColumn;
       let x = GridConfig.HEADER_WIDTH - columnOffset;
 
-      while (x < this.canvas.width && columnIndex < GridConfig.COLUMN_COUNT) {
+      while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
         const value = this.dataStore.getCellValue(rowIndex, columnIndex);
 
         if (value !== null) {
@@ -263,7 +278,7 @@ export class GridRenderer {
       this.styleSelection(
         GridConfig.HEADER_WIDTH,
         y,
-        this.canvas.width - GridConfig.HEADER_WIDTH,
+        this.viewportWidth - GridConfig.HEADER_WIDTH,
         GridConfig.DEFAULT_ROW_HEIGHT,
       );
       return;
@@ -279,7 +294,7 @@ export class GridRenderer {
         x,
         GridConfig.HEADER_HEIGHT,
         GridConfig.DEFAULT_COLUMN_WIDTH,
-        this.canvas.height - GridConfig.HEADER_HEIGHT,
+        this.viewportHeight - GridConfig.HEADER_HEIGHT,
       );
       return;
     }
