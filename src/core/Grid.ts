@@ -3,6 +3,10 @@ import { ViewportManager } from "../managers/ViewportManager";
 import { GridRenderer } from "../renderer/GridRenderer";
 import { SelectionManager } from "../managers/SelectionManager";
 import type { CellPosition } from "../models/CellPosition";
+import type { CommandManager } from "../commands/CommandManager";
+import type { CellEditor } from "../editor/CellEditor";
+import type { GridDataStore } from "../data/GridDataStore";
+import { EditCellCommand } from "../commands/EditCellCommand";
 
 export class Grid {
   private readonly renderer: GridRenderer;
@@ -11,9 +15,13 @@ export class Grid {
   private readonly scrollContent: HTMLElement;
   private readonly selectionManager: SelectionManager;
   private readonly canvas: HTMLCanvasElement;
+  private readonly commandManager: CommandManager;
+  private readonly cellEditor: CellEditor;
+  private readonly dataStore: GridDataStore;
 
   private isSelecting: boolean;
   private selectionStart: CellPosition | null;
+  private editingCell: CellPosition | null;
 
   constructor(
     renderer: GridRenderer,
@@ -22,6 +30,9 @@ export class Grid {
     scrollContent: HTMLElement,
     selectionManager: SelectionManager,
     canvas: HTMLCanvasElement,
+    dataStore: GridDataStore,
+    commandManager: CommandManager,
+    cellEditor: CellEditor,
   ) {
     this.renderer = renderer;
     this.viewportManager = viewportManager;
@@ -29,8 +40,15 @@ export class Grid {
     this.scrollContent = scrollContent;
     this.selectionManager = selectionManager;
     this.canvas = canvas;
+    this.dataStore = dataStore;
+    this.commandManager = commandManager;
+    this.cellEditor = cellEditor;
     this.isSelecting = false;
     this.selectionStart = null;
+    this.editingCell = null;
+    this.cellEditor
+      .getInput()
+      .addEventListener("keydown", this.handleEditorKeyDown);
   }
 
   public initialize(): void {
@@ -43,6 +61,7 @@ export class Grid {
     this.container.addEventListener("scroll", this.handleScroll);
     window.addEventListener("resize", this.handleResize);
     this.addMouseEventListerener();
+    this.canvas.addEventListener("dblclick", this.handleDoubleClick);
   }
 
   private addMouseEventListerener(): void {
@@ -69,7 +88,27 @@ export class Grid {
       this.container.scrollLeft,
       this.container.scrollTop,
     );
+    if (this.editingCell) {
+      const row = this.editingCell.getRowIndex();
+      const column = this.editingCell.getColumnIndex();
 
+      const x =
+        GridConfig.HEADER_WIDTH +
+        column * GridConfig.DEFAULT_COLUMN_WIDTH -
+        this.viewportManager.getScrollX();
+
+      const y =
+        GridConfig.HEADER_HEIGHT +
+        row * GridConfig.DEFAULT_ROW_HEIGHT -
+        this.viewportManager.getScrollY();
+
+      this.cellEditor.move(
+        x,
+        y,
+        GridConfig.DEFAULT_COLUMN_WIDTH,
+        GridConfig.DEFAULT_ROW_HEIGHT,
+      );
+    }
     this.renderer.render();
   };
 
@@ -95,6 +134,9 @@ export class Grid {
   }
 
   private handleMouseDown = (event: MouseEvent): void => {
+    if (this.editingCell) {
+      this.saveEditedCell();
+    }
     const rect = this.canvas.getBoundingClientRect();
 
     const x = event.clientX - rect.left;
@@ -148,4 +190,79 @@ export class Grid {
     this.isSelecting = false;
     this.selectionStart = null;
   };
+
+  private handleDoubleClick = (event: MouseEvent): void => {
+    if (this.editingCell) {
+      this.saveEditedCell();
+    }
+
+    const cellPosition = this.getCellFromMouseEvent(event);
+    if (!cellPosition) {
+      return;
+    }
+
+    this.editingCell = cellPosition;
+
+    const row = cellPosition.getRowIndex();
+    const column = cellPosition.getColumnIndex();
+    const value = this.dataStore.getCellValue(row, column);
+
+    const x =
+      GridConfig.HEADER_WIDTH +
+      column * GridConfig.DEFAULT_COLUMN_WIDTH -
+      this.viewportManager.getScrollX();
+
+    const y =
+      GridConfig.HEADER_HEIGHT +
+      row * GridConfig.DEFAULT_ROW_HEIGHT -
+      this.viewportManager.getScrollY();
+
+    this.cellEditor.show(
+      x,
+      y,
+      GridConfig.DEFAULT_COLUMN_WIDTH,
+      GridConfig.DEFAULT_ROW_HEIGHT,
+      String(value ?? ""),
+    );
+  };
+
+  private handleEditorKeyDown = (event: KeyboardEvent): void => {
+    if (!this.editingCell) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      this.saveEditedCell();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      this.cellEditor.hide();
+      this.editingCell = null;
+    }
+  };
+
+  private saveEditedCell(): void {
+    if (!this.editingCell) {
+      return;
+    }
+
+    const row = this.editingCell.getRowIndex();
+    const column = this.editingCell.getColumnIndex();
+    const oldValue = this.dataStore.getCellValue(row, column);
+    const newValue = this.cellEditor.getValue();
+
+    const command = new EditCellCommand(
+      this.dataStore,
+      row,
+      column,
+      oldValue,
+      newValue,
+    );
+
+    this.commandManager.execute(command);
+    this.cellEditor.hide();
+    this.editingCell = null;
+    this.renderer.render();
+  }
 }
