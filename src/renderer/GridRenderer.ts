@@ -243,10 +243,13 @@ export class GridRenderer {
 
       while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
         const value = this.dataStore.getCellValue(rowIndex, columnIndex);
-
+        const displayText = this.fitText(
+          String(value),
+          GridConfig.DEFAULT_COLUMN_WIDTH - GridConfig.CELL_PADDING,
+        );
         if (value !== null) {
           this.context.fillText(
-            String(value),
+            displayText,
             x + GridConfig.CELL_PADDING,
             y + GridConfig.DEFAULT_ROW_HEIGHT / 2,
           );
@@ -327,5 +330,15 @@ export class GridRenderer {
     this.context.fillStyle = GridConfig.SELECTION_BACKGROUND_COLOR;
     this.context.fillRect(x, y, width, height);
     this.context.strokeRect(x, y, width, height);
+  }
+
+  private fitText(text: string, maxWidth: number): string {
+    if (this.context.measureText(text).width <= maxWidth) {
+      return text;
+    }
+    while (text.length > 0 && this.context.measureText(text).width > maxWidth) {
+      text = text.slice(0, -1);
+    }
+    return text;
   }
 }

@@ -1,3 +1,5 @@
+import { GridConfig } from "../config/GridConfig";
+
 export class CellEditor {
   private readonly input: HTMLInputElement;
   constructor() {
@@ -8,11 +10,12 @@ export class CellEditor {
     this.input.type = "text";
     this.input.style.position = "absolute";
     this.input.style.display = "none";
-    this.input.style.padding = "0 4px";
-    this.input.style.margin = "0";
-    this.input.style.border = "2px solid #107c41";
-    this.input.style.font = "14px Calibri";
+    this.input.style.padding = "0px";
+    this.input.style.margin = "0px";
+    this.input.style.outline = "none";
     this.input.style.boxSizing = "border-box";
+    this.input.style.fontFamily = "Calibri";
+    this.input.style.fontSize = "14px";
     document.body.appendChild(this.input);
   }
 
@@ -52,5 +55,9 @@ export class CellEditor {
 
   public getInput(): HTMLInputElement {
     return this.input;
+  }
+
+  public isVisible(): boolean {
+    return this.input.style.display === "block";
   }
 }

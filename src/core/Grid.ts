@@ -62,6 +62,7 @@ export class Grid {
     window.addEventListener("resize", this.handleResize);
     this.addMouseEventListerener();
     this.canvas.addEventListener("dblclick", this.handleDoubleClick);
+    window.addEventListener("keydown", this.handleKeyDown);
   }
 
   private addMouseEventListerener(): void {
@@ -265,4 +266,24 @@ export class Grid {
     this.editingCell = null;
     this.renderer.render();
   }
+
+  private handleKeyDown = (event: KeyboardEvent): void => {
+    if (this.cellEditor.isVisible()) {
+      return;
+    }
+
+    if (event.ctrlKey && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      this.commandManager.undo();
+      this.renderer.render();
+      return;
+    }
+
+    if (event.ctrlKey && event.key.toLowerCase() === "y") {
+      event.preventDefault();
+      this.commandManager.redo();
+      this.renderer.render();
+      return;
+    }
+  };
 }
