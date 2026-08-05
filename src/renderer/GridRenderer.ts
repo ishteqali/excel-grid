@@ -89,26 +89,43 @@ export class GridRenderer {
     this.drawHorizontalLines();
     this.drawVerticalLines();
   }
+
   private drawHorizontalLines(): void {
-    const rowOffset = this.viewportManager.getRowOffset();
-    let y = GridConfig.HEADER_HEIGHT - rowOffset;
     this.context.beginPath();
-    while (y <= this.viewportHeight) {
+
+    const firstRow = this.viewportManager.getFirstVisibleRow();
+    const rowOffset = this.viewportManager.getRowOffset();
+
+    let rowIndex = firstRow;
+    let y = GridConfig.HEADER_HEIGHT - rowOffset;
+
+    while (y <= this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
       this.context.moveTo(GridConfig.HEADER_WIDTH, y);
       this.context.lineTo(this.viewportWidth, y);
-      y = y + GridConfig.DEFAULT_ROW_HEIGHT;
+      y += this.viewportManager.getRowHeight(rowIndex);
+      rowIndex++;
     }
+
     this.context.stroke();
   }
+
   private drawVerticalLines(): void {
-    const columnOffset = this.viewportManager.getColumnOffset();
-    let x = GridConfig.HEADER_WIDTH - columnOffset;
     this.context.beginPath();
-    while (x <= this.viewportWidth) {
+
+    const firstColumn = this.viewportManager.getFirstVisibleColumn();
+    const columnOffset = this.viewportManager.getColumnOffset();
+
+    let columnIndex = firstColumn;
+    let x = GridConfig.HEADER_WIDTH - columnOffset;
+
+    while (x <= this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
       this.context.moveTo(x, GridConfig.HEADER_HEIGHT);
       this.context.lineTo(x, this.viewportHeight);
-      x = x + GridConfig.DEFAULT_COLUMN_WIDTH;
+
+      x += this.viewportManager.getColumnWidth(columnIndex);
+      columnIndex++;
     }
+
     this.context.stroke();
   }
   private drawColumnHeaders(): void {
@@ -121,14 +138,16 @@ export class GridRenderer {
 
     let columnIndex = firstVisibleColumn;
     let x = GridConfig.HEADER_WIDTH - columnOffset;
+
     while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
-      const columnName = this.getColumnName(columnIndex);
+      const width = this.viewportManager.getColumnWidth(columnIndex);
+
       this.context.fillText(
-        columnName,
-        x + GridConfig.DEFAULT_COLUMN_WIDTH / 2,
+        this.getColumnName(columnIndex),
+        x + width / 2,
         GridConfig.HEADER_HEIGHT / 2,
       );
-      x = x + GridConfig.DEFAULT_COLUMN_WIDTH;
+      x += width;
       columnIndex++;
     }
     this.context.restore();
@@ -157,13 +176,15 @@ export class GridRenderer {
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
     while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
+      const rowHeight = this.viewportManager.getRowHeight(rowIndex);
+
       this.context.fillText(
         (rowIndex + 1).toString(),
         GridConfig.HEADER_WIDTH / 2,
-        y + GridConfig.DEFAULT_ROW_HEIGHT / 2,
+        y + rowHeight / 2,
       );
 
-      y = y + GridConfig.DEFAULT_ROW_HEIGHT;
+      y += rowHeight;
       rowIndex++;
     }
     this.context.restore();
@@ -238,31 +259,37 @@ export class GridRenderer {
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
     while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
+      const rowHeight = this.viewportManager.getRowHeight(rowIndex);
+
       let columnIndex = firstVisibleColumn;
       let x = GridConfig.HEADER_WIDTH - columnOffset;
 
       while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
+        const columnWidth = this.viewportManager.getColumnWidth(columnIndex);
         const value = this.dataStore.getCellValue(rowIndex, columnIndex);
-        const displayText = this.fitText(
-          String(value),
-          GridConfig.DEFAULT_COLUMN_WIDTH - GridConfig.CELL_PADDING,
-        );
+
         if (value !== null) {
+          const displayText = this.fitText(
+            String(value),
+            columnWidth - GridConfig.CELL_PADDING * 2,
+          );
+
           this.context.fillText(
             displayText,
             x + GridConfig.CELL_PADDING,
-            y + GridConfig.DEFAULT_ROW_HEIGHT / 2,
+            y + rowHeight / 2,
           );
         }
 
-        x += GridConfig.DEFAULT_COLUMN_WIDTH;
+        x += columnWidth;
         columnIndex++;
       }
 
-      y += GridConfig.DEFAULT_ROW_HEIGHT;
+      y += rowHeight;
       rowIndex++;
     }
   }
+
   private drawSelection(): void {
     const selectionType = this.selectionManager.getSelectionType();
     const range = this.selectionManager.getSelectionRange();

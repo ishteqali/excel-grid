@@ -52,7 +52,99 @@ export class DimensionManager {
       existingColumn.setWidth(validWidth);
       return;
     }
-    const column = new ColumnModel(columnIndex, "id", validWidth); // Todo: after completing dataloading and cell selection will implement cell resizing
+    const column = new ColumnModel(columnIndex, "id", validWidth);
     this.columns.set(columnIndex, column);
+  }
+
+  public getColumnX(columnIndex: number) {
+    let x = columnIndex * GridConfig.DEFAULT_COLUMN_WIDTH;
+    for (const [index, column] of this.columns) {
+      if (index >= columnIndex) {
+        continue;
+      }
+      x += column.getWidth() - GridConfig.DEFAULT_COLUMN_WIDTH;
+    }
+    return x;
+  }
+
+  public getRowY(rowIndex: number) {
+    let y = rowIndex * GridConfig.DEFAULT_ROW_HEIGHT;
+    for (const [index, row] of this.rows) {
+      if (index >= rowIndex) {
+        continue;
+      }
+      y += row.getHeight() - GridConfig.DEFAULT_ROW_HEIGHT;
+    }
+    return y;
+  }
+
+  public getResizeColumnAtPosition(
+    mouseX: number,
+    firstVisibleColumn: number,
+    visibleColumnCount: number,
+  ): number | null {
+    const lastVisibleColumn = Math.min(
+      firstVisibleColumn + visibleColumnCount,
+      GridConfig.COLUMN_COUNT,
+    );
+
+    for (
+      let column = firstVisibleColumn;
+      column < lastVisibleColumn;
+      column++
+    ) {
+      const rightBorder = this.getColumnX(column) + this.getColumnWidth(column);
+      const distance = Math.abs(mouseX - rightBorder);
+
+      if (distance <= GridConfig.COLUMN_RESIZE_MARGIN) {
+        return column;
+      }
+    }
+    return null;
+  }
+
+  public getColumnAtOffset(offset: number): number {
+    let estimatedColumn = Math.floor(offset / GridConfig.DEFAULT_COLUMN_WIDTH);
+
+    estimatedColumn = Math.max(
+      0,
+      Math.min(estimatedColumn, GridConfig.COLUMN_COUNT - 1),
+    );
+
+    while (estimatedColumn > 0 && this.getColumnX(estimatedColumn) > offset) {
+      estimatedColumn--;
+    }
+
+    while (
+      estimatedColumn < GridConfig.COLUMN_COUNT - 1 &&
+      this.getColumnX(estimatedColumn) + this.getColumnWidth(estimatedColumn) <=
+        offset
+    ) {
+      estimatedColumn++;
+    }
+
+    return estimatedColumn;
+  }
+
+  public getRowAtOffset(offset: number): number {
+    let estimatedRow = Math.floor(offset / GridConfig.DEFAULT_ROW_HEIGHT);
+
+    estimatedRow = Math.max(
+      0,
+      Math.min(estimatedRow, GridConfig.ROW_COUNT - 1),
+    );
+
+    while (estimatedRow > 0 && this.getRowY(estimatedRow) > offset) {
+      estimatedRow--;
+    }
+
+    while (
+      estimatedRow < GridConfig.ROW_COUNT - 1 &&
+      this.getRowY(estimatedRow) + this.getRowHeight(estimatedRow) <= offset
+    ) {
+      estimatedRow++;
+    }
+
+    return estimatedRow;
   }
 }

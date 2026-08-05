@@ -27,11 +27,11 @@ export class ViewportManager {
   }
 
   public getFirstVisibleRow(): number {
-    return Math.floor(this.scrollY / GridConfig.DEFAULT_ROW_HEIGHT);
+    return this.dimensionManager.getRowAtOffset(this.scrollY);
   }
 
   public getFirstVisibleColumn(): number {
-    return Math.floor(this.scrollX / GridConfig.DEFAULT_COLUMN_WIDTH);
+    return this.dimensionManager.getColumnAtOffset(this.scrollX);
   }
 
   public getVisibleRowCount(viewportHeight: number): number {
@@ -47,11 +47,13 @@ export class ViewportManager {
   }
 
   public getRowOffset(): number {
-    return this.scrollY % GridConfig.DEFAULT_ROW_HEIGHT;
+    const firstRow = this.getFirstVisibleRow();
+    return this.scrollY - this.dimensionManager.getRowY(firstRow);
   }
 
   public getColumnOffset(): number {
-    return this.scrollX % GridConfig.DEFAULT_COLUMN_WIDTH;
+    const firstColumn = this.getFirstVisibleColumn();
+    return this.scrollX - this.dimensionManager.getColumnX(firstColumn);
   }
 
   public getCellAtPoint(x: number, y: number): CellPosition | null {
@@ -62,8 +64,8 @@ export class ViewportManager {
     const gridX = x - GridConfig.HEADER_WIDTH + this.scrollX;
     const gridY = y - GridConfig.HEADER_HEIGHT + this.scrollY;
 
-    const columnIndex = Math.floor(gridX / GridConfig.DEFAULT_COLUMN_WIDTH);
-    const rowIndex = Math.floor(gridY / GridConfig.DEFAULT_ROW_HEIGHT);
+    const columnIndex = this.dimensionManager.getColumnAtOffset(gridX);
+    const rowIndex = this.dimensionManager.getRowAtOffset(gridY);
 
     if (
       rowIndex >= GridConfig.ROW_COUNT ||
@@ -76,12 +78,12 @@ export class ViewportManager {
 
   public getRowAtPoint(y: number): number {
     const gridY = y - GridConfig.HEADER_HEIGHT + this.scrollY;
-    return Math.floor(gridY / GridConfig.DEFAULT_ROW_HEIGHT);
+    return this.dimensionManager.getRowAtOffset(gridY);
   }
 
   public getColumnPoint(x: number): number {
     const gridX = x - GridConfig.HEADER_WIDTH + this.scrollX;
-    return Math.floor(gridX / GridConfig.DEFAULT_COLUMN_WIDTH);
+    return this.dimensionManager.getColumnAtOffset(gridX);
   }
 
   public isRowHeader(x: number, y: number): boolean {
@@ -94,5 +96,40 @@ export class ViewportManager {
 
   public isCornerHeader(x: number, y: number): boolean {
     return x < GridConfig.HEADER_WIDTH && y < GridConfig.HEADER_HEIGHT;
+  }
+
+  public getColumnWidth(columnIndex: number): number {
+    return this.dimensionManager.getColumnWidth(columnIndex);
+  }
+
+  public getRowHeight(rowIndex: number): number {
+    return this.dimensionManager.getRowHeight(rowIndex);
+  }
+
+  public getColumnX(columnIndex: number): number {
+    return this.dimensionManager.getColumnX(columnIndex);
+  }
+
+  public getRowY(rowIndex: number): number {
+    return this.dimensionManager.getRowY(rowIndex);
+  }
+
+  public getResizeColumnAtPoint(
+    mouseX: number,
+    viewportWidth: number,
+  ): number | null {
+    if (mouseX < GridConfig.HEADER_WIDTH) {
+      return null;
+    }
+
+    return this.dimensionManager.getResizeColumnAtPosition(
+      mouseX - GridConfig.HEADER_WIDTH + this.scrollX,
+      this.getFirstVisibleColumn(),
+      this.getVisibleColumnCount(viewportWidth),
+    );
+  }
+
+  public setColumnWidth(columnIndex: number, width: number): void {
+    this.dimensionManager.setColumnWidth(columnIndex, width);
   }
 }

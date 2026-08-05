@@ -28,4 +28,8 @@ export class GridConfig {
   static readonly SELECTION_BORDER_COLOR = "#107c41";
 
   static readonly SELECTION_BACKGROUND_COLOR = "rgba(195, 243, 217,0.5)";
+
+  static readonly COLUMN_RESIZE_MARGIN = 4;
+
+  static readonly ROW_RESIZE_MARGIN = 4;
 }

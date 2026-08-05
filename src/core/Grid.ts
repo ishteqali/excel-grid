@@ -23,6 +23,10 @@ export class Grid {
   private selectionStart: CellPosition | null;
   private editingCell: CellPosition | null;
 
+  private resizingColumn: number | null = null;
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
+
   constructor(
     renderer: GridRenderer,
     viewportManager: ViewportManager,
@@ -95,12 +99,12 @@ export class Grid {
 
       const x =
         GridConfig.HEADER_WIDTH +
-        column * GridConfig.DEFAULT_COLUMN_WIDTH -
+        this.viewportManager.getColumnX(column) -
         this.viewportManager.getScrollX();
 
       const y =
         GridConfig.HEADER_HEIGHT +
-        row * GridConfig.DEFAULT_ROW_HEIGHT -
+        this.viewportManager.getRowY(row) -
         this.viewportManager.getScrollY();
 
       this.cellEditor.move(
@@ -174,6 +178,23 @@ export class Grid {
   };
 
   private handleMouseMove = (event: MouseEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    if (this.viewportManager.isColumnHeader(mouseX, mouseY)) {
+      const resizeColumn = this.viewportManager.getResizeColumnAtPoint(
+        mouseX,
+        this.container.clientWidth,
+      );
+
+      this.canvas.style.cursor =
+        resizeColumn !== null ? "col-resize" : "default";
+    } else {
+      this.canvas.style.cursor = "default";
+    }
+
     if (!this.isSelecting || !this.selectionStart) {
       return;
     }
@@ -210,12 +231,12 @@ export class Grid {
 
     const x =
       GridConfig.HEADER_WIDTH +
-      column * GridConfig.DEFAULT_COLUMN_WIDTH -
+      this.viewportManager.getColumnX(column) -
       this.viewportManager.getScrollX();
 
     const y =
       GridConfig.HEADER_HEIGHT +
-      row * GridConfig.DEFAULT_ROW_HEIGHT -
+      this.viewportManager.getRowY(row) -
       this.viewportManager.getScrollY();
 
     this.cellEditor.show(
