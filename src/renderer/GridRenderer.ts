@@ -302,14 +302,15 @@ export class GridRenderer {
       const row = range.getStartRow();
       const y =
         GridConfig.HEADER_HEIGHT +
-        row * GridConfig.DEFAULT_ROW_HEIGHT -
+        this.viewportManager.getRowY(row) -
         this.viewportManager.getScrollY();
+      const height = this.viewportManager.getRowHeight(row);
 
       this.styleSelection(
         GridConfig.HEADER_WIDTH,
         y,
         this.viewportWidth - GridConfig.HEADER_WIDTH,
-        GridConfig.DEFAULT_ROW_HEIGHT,
+        height,
       );
       return;
     }
@@ -317,13 +318,13 @@ export class GridRenderer {
       const column = range.getStartColumn();
       const x =
         GridConfig.HEADER_WIDTH +
-        column * GridConfig.DEFAULT_COLUMN_WIDTH -
+        this.viewportManager.getColumnX(column) -
         this.viewportManager.getScrollX();
-
+      const width = this.viewportManager.getColumnWidth(column);
       this.styleSelection(
         x,
         GridConfig.HEADER_HEIGHT,
-        GridConfig.DEFAULT_COLUMN_WIDTH,
+        width,
         this.viewportHeight - GridConfig.HEADER_HEIGHT,
       );
       return;
@@ -336,18 +337,24 @@ export class GridRenderer {
 
     const x =
       GridConfig.HEADER_WIDTH +
-      startColumn * GridConfig.DEFAULT_COLUMN_WIDTH -
+      this.viewportManager.getColumnX(startColumn) -
       this.viewportManager.getScrollX();
 
     const y =
       GridConfig.HEADER_HEIGHT +
-      startRow * GridConfig.DEFAULT_ROW_HEIGHT -
+      this.viewportManager.getRowY(startRow) -
       this.viewportManager.getScrollY();
 
-    const width =
-      (endColumn - startColumn + 1) * GridConfig.DEFAULT_COLUMN_WIDTH;
+    let width = 0;
+    for (let column = startColumn; column <= endColumn; column++) {
+      width += this.viewportManager.getColumnWidth(column);
+    }
 
-    const height = (endRow - startRow + 1) * GridConfig.DEFAULT_ROW_HEIGHT;
+    let height = 0;
+    for (let row = startRow; row <= endRow; row++) {
+      height += this.viewportManager.getRowHeight(row);
+    }
+
     this.styleSelection(x, y, width, height);
   }
 

@@ -147,4 +147,45 @@ export class DimensionManager {
 
     return estimatedRow;
   }
+
+  public getResizeRowAtPosition(
+    mouseY: number,
+    firstVisibleRow: number,
+    visibleRowCount: number,
+  ) {
+    const lastVisibleRow = Math.min(
+      firstVisibleRow + visibleRowCount,
+      GridConfig.ROW_COUNT,
+    );
+
+    for (let row = firstVisibleRow; row < lastVisibleRow; row++) {
+      const bottomBorder = this.getRowY(row) + this.getRowHeight(row);
+      const distance = Math.abs(mouseY - bottomBorder);
+
+      if (distance <= GridConfig.ROW_RESIZE_MARGIN) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  public getTotalWidth(): number {
+    let width = GridConfig.COLUMN_COUNT * GridConfig.DEFAULT_COLUMN_WIDTH;
+
+    for (const column of this.columns.values()) {
+      width += column.getWidth() - GridConfig.DEFAULT_COLUMN_WIDTH;
+    }
+
+    return width;
+  }
+
+  public getTotalHeight(): number {
+    let height = GridConfig.ROW_COUNT * GridConfig.DEFAULT_ROW_HEIGHT;
+
+    for (const row of this.rows.values()) {
+      height += row.getHeight() - GridConfig.DEFAULT_ROW_HEIGHT;
+    }
+
+    return height;
+  }
 }

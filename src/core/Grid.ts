@@ -7,6 +7,8 @@ import type { CommandManager } from "../commands/CommandManager";
 import type { CellEditor } from "../editor/CellEditor";
 import type { GridDataStore } from "../data/GridDataStore";
 import { EditCellCommand } from "../commands/EditCellCommand";
+import { ResizeColumnCommand } from "../commands/ResizeColumnCommand";
+import { ResizeRowCommand } from "../commands/ResizeRowCommand";
 
 export class Grid {
   private readonly renderer: GridRenderer;
@@ -26,6 +28,10 @@ export class Grid {
   private resizingColumn: number | null = null;
   private resizeStartX = 0;
   private resizeStartWidth = 0;
+
+  private resizingRow: number | null = null;
+  private resizeStartY = 0;
+  private resizeStartHeight = 0;
 
   constructor(
     renderer: GridRenderer,
@@ -77,12 +83,10 @@ export class Grid {
 
   private setupVirtualScrollSpace(): void {
     const totalWidth =
-      GridConfig.HEADER_WIDTH +
-      GridConfig.COLUMN_COUNT * GridConfig.DEFAULT_COLUMN_WIDTH;
+      GridConfig.HEADER_WIDTH + this.viewportManager.getTotalWidth();
 
     const totalHeight =
-      GridConfig.HEADER_HEIGHT +
-      GridConfig.ROW_COUNT * GridConfig.DEFAULT_ROW_HEIGHT;
+      GridConfig.HEADER_HEIGHT + this.viewportManager.getTotalHeight();
 
     this.scrollContent.style.width = `${totalWidth}px`;
     this.scrollContent.style.height = `${totalHeight}px`;
@@ -107,12 +111,32 @@ export class Grid {
         this.viewportManager.getRowY(row) -
         this.viewportManager.getScrollY();
 
-      this.cellEditor.move(
-        x,
-        y,
-        GridConfig.DEFAULT_COLUMN_WIDTH,
-        GridConfig.DEFAULT_ROW_HEIGHT,
-      );
+      const width = this.viewportManager.getColumnWidth(column);
+      const height = this.viewportManager.getRowHeight(row);
+
+      const gridLeft = GridConfig.HEADER_WIDTH;
+      const gridTop = GridConfig.HEADER_HEIGHT;
+
+      let editorX = x;
+      let eidtorY = y;
+      let editorWidth = width;
+      let editorHeight = height;
+
+      if (editorX < gridLeft) {
+        editorWidth -= gridLeft - editorX;
+        editorX = gridLeft;
+      }
+
+      if (eidtorY < gridTop) {
+        editorHeight -= gridTop - eidtorY;
+        eidtorY = gridTop;
+      }
+
+      if (editorWidth > 0 && editorHeight > 0) {
+        this.cellEditor.move(editorX, eidtorY, editorWidth, editorHeight);
+      } else {
+        this.cellEditor.hide();
+      }
     }
     this.renderer.render();
   };
@@ -147,6 +171,34 @@ export class Grid {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
+    if (this.viewportManager.isColumnHeader(x, y)) {
+      const resizeColumn = this.viewportManager.getResizeColumnAtPoint(
+        x,
+        this.container.clientWidth,
+      );
+
+      if (resizeColumn !== null) {
+        this.resizingColumn = resizeColumn;
+        this.resizeStartX = event.clientX;
+        this.resizeStartWidth =
+          this.viewportManager.getColumnWidth(resizeColumn);
+        return;
+      }
+    }
+    if (this.viewportManager.isRowHeader(x, y)) {
+      const resizeRow = this.viewportManager.getResizeRowAtPoint(
+        y,
+        this.container.clientHeight,
+      );
+
+      if (resizeRow !== null) {
+        this.resizingRow = resizeRow;
+        this.resizeStartY = event.clientY;
+        this.resizeStartHeight = this.viewportManager.getRowHeight(resizeRow);
+        return;
+      }
+    }
+
     if (this.viewportManager.isRowHeader(x, y)) {
       const rowIndex = this.viewportManager.getRowAtPoint(y);
       this.selectionManager.selectRow(rowIndex);
@@ -178,12 +230,35 @@ export class Grid {
   };
 
   private handleMouseMove = (event: MouseEvent): void => {
+    if (this.resizingColumn !== null) {
+      const delta = event.clientX - this.resizeStartX;
+      const newWidth = this.resizeStartWidth + delta;
+
+      this.viewportManager.setColumnWidth(this.resizingColumn, newWidth);
+      this.setupVirtualScrollSpace();
+      this.renderer.render();
+
+      return;
+    }
+
+    if (this.resizingRow !== null) {
+      const delta = event.clientY - this.resizeStartY;
+      const newHeight = this.resizeStartHeight + delta;
+
+      this.viewportManager.setRowHeight(this.resizingRow, newHeight);
+      this.setupVirtualScrollSpace();
+      this.renderer.render();
+    }
+
     const rect = this.canvas.getBoundingClientRect();
 
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    if (this.viewportManager.isColumnHeader(mouseX, mouseY)) {
+    if (
+      this.viewportManager.isColumnHeader(mouseX, mouseY) &&
+      this.resizingColumn === null
+    ) {
       const resizeColumn = this.viewportManager.getResizeColumnAtPoint(
         mouseX,
         this.container.clientWidth,
@@ -191,6 +266,16 @@ export class Grid {
 
       this.canvas.style.cursor =
         resizeColumn !== null ? "col-resize" : "default";
+    } else if (
+      this.viewportManager.isRowHeader(mouseX, mouseY) &&
+      this.resizingRow === null
+    ) {
+      const resizeRow = this.viewportManager.getResizeRowAtPoint(
+        mouseY,
+        this.container.clientHeight,
+      );
+
+      this.canvas.style.cursor = resizeRow !== null ? "row-resize" : "default";
     } else {
       this.canvas.style.cursor = "default";
     }
@@ -209,6 +294,43 @@ export class Grid {
   };
 
   private handleMouseUp = (): void => {
+    if (this.resizingColumn !== null) {
+      const newWidth = this.viewportManager.getColumnWidth(this.resizingColumn);
+      if (newWidth !== this.resizeStartWidth) {
+        const command = new ResizeColumnCommand(
+          this.viewportManager,
+          this.resizingColumn,
+          this.resizeStartWidth,
+          newWidth,
+        );
+
+        this.commandManager.execute(command);
+      }
+
+      this.resizingColumn = null;
+      this.setupVirtualScrollSpace();
+      this.renderer.render();
+      return;
+    }
+
+    if (this.resizingRow !== null) {
+      const newHeight = this.viewportManager.getRowHeight(this.resizingRow);
+      if (newHeight !== this.resizeStartHeight) {
+        this.commandManager.execute(
+          new ResizeRowCommand(
+            this.viewportManager,
+            this.resizingRow,
+            this.resizeStartHeight,
+            newHeight,
+          ),
+        );
+      }
+      this.resizingRow = null;
+      this.setupVirtualScrollSpace();
+      this.renderer.render();
+      return;
+    }
+
     this.isSelecting = false;
     this.selectionStart = null;
   };
@@ -239,13 +361,10 @@ export class Grid {
       this.viewportManager.getRowY(row) -
       this.viewportManager.getScrollY();
 
-    this.cellEditor.show(
-      x,
-      y,
-      GridConfig.DEFAULT_COLUMN_WIDTH,
-      GridConfig.DEFAULT_ROW_HEIGHT,
-      String(value ?? ""),
-    );
+    const width = this.viewportManager.getColumnWidth(column);
+    const height = this.viewportManager.getRowHeight(row);
+
+    this.cellEditor.show(x, y, width, height, String(value ?? ""));
   };
 
   private handleEditorKeyDown = (event: KeyboardEvent): void => {

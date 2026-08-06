@@ -132,4 +132,31 @@ export class ViewportManager {
   public setColumnWidth(columnIndex: number, width: number): void {
     this.dimensionManager.setColumnWidth(columnIndex, width);
   }
+
+  public getTotalWidth(): number {
+    return this.dimensionManager.getTotalWidth();
+  }
+
+  public getTotalHeight(): number {
+    return this.dimensionManager.getTotalHeight();
+  }
+
+  public getResizeRowAtPoint(
+    mouseY: number,
+    viewportHeight: number,
+  ): number | null {
+    if (mouseY < GridConfig.HEADER_HEIGHT) {
+      return null;
+    }
+
+    return this.dimensionManager.getResizeRowAtPosition(
+      mouseY - GridConfig.HEADER_HEIGHT + this.scrollY,
+      this.getFirstVisibleRow(),
+      this.getVisibleRowCount(viewportHeight),
+    );
+  }
+
+  public setRowHeight(rowIndex: number, height: number): void {
+    this.dimensionManager.setRowHeight(rowIndex, height);
+  }
 }
