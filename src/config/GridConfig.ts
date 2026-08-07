@@ -34,4 +34,6 @@ export class GridConfig {
   static readonly ROW_RESIZE_MARGIN = 4;
 
   static readonly STATUS_BAR_HEIGHT = 20;
+
+  static readonly FILL_HANDLE_SIZE = 5;
 }

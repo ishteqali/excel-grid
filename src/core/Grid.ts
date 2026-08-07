@@ -70,6 +70,9 @@ export class Grid {
   public initialize(): void {
     this.setupVirtualScrollSpace();
     this.resize();
+    this.selectionManager.selectCell(0, 0);
+    this.updateSummary();
+    this.renderer.render();
     this.attachEventListeners();
   }
 

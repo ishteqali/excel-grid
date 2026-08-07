@@ -61,11 +61,11 @@ export class GridRenderer {
     this.clear();
 
     this.drawHeadersBackground();
-    this.drawHeaderSelection();
     this.drawHeaderBorders();
     this.drawColumnHeaders();
     this.drawRowHeaders();
     this.drawHeaderBorders();
+    this.drawHeaderSelection();
     this.drawGridBody();
     this.drawSummaryBar();
   }
@@ -339,7 +339,13 @@ export class GridRenderer {
         this.viewportManager.getScrollY();
       const height = this.viewportManager.getRowHeight(row);
 
-      this.styleSelection(GridConfig.HEADER_WIDTH, y, this.bodyWidth, height);
+      this.styleSelection(
+        GridConfig.HEADER_WIDTH,
+        y,
+        this.bodyWidth,
+        height,
+        false,
+      );
       return;
     }
     if (selectionType === "Column") {
@@ -349,7 +355,13 @@ export class GridRenderer {
         this.viewportManager.getColumnX(column) -
         this.viewportManager.getScrollX();
       const width = this.viewportManager.getColumnWidth(column);
-      this.styleSelection(x, GridConfig.HEADER_HEIGHT, width, this.bodyHeight);
+      this.styleSelection(
+        x,
+        GridConfig.HEADER_HEIGHT,
+        width,
+        this.bodyHeight,
+        false,
+      );
       return;
     }
 
@@ -378,15 +390,24 @@ export class GridRenderer {
       height += this.viewportManager.getRowHeight(row);
     }
 
-    this.styleSelection(x, y, width, height);
+    this.styleSelection(x, y, width, height, true);
   }
 
-  private styleSelection(x: number, y: number, width: number, height: number) {
+  private styleSelection(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    showHandle: boolean,
+  ) {
     this.context.strokeStyle = GridConfig.SELECTION_BORDER_COLOR;
     this.context.lineWidth = 2;
     this.context.fillStyle = GridConfig.SELECTION_BACKGROUND_COLOR;
     this.context.fillRect(x, y, width, height);
     this.context.strokeRect(x, y, width, height);
+    if (showHandle) {
+      this.drawFillHandle(x, y, width, height);
+    }
   }
 
   private fitText(text: string, maxWidth: number): string {
@@ -522,5 +543,23 @@ export class GridRenderer {
     this.context.lineTo(GridConfig.HEADER_WIDTH, this.getBodyBottom());
 
     this.context.stroke();
+  }
+
+  private drawFillHandle(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
+    const size = GridConfig.FILL_HANDLE_SIZE;
+
+    this.context.fillStyle = GridConfig.SELECTION_BORDER_COLOR;
+
+    this.context.fillRect(
+      x + width - size / 2,
+      y + height - size / 2,
+      size,
+      size,
+    );
   }
 }
