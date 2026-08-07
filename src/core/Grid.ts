@@ -107,39 +107,10 @@ export class Grid {
       const row = this.editingCell.getRowIndex();
       const column = this.editingCell.getColumnIndex();
 
-      const x =
-        GridConfig.HEADER_WIDTH +
-        this.viewportManager.getColumnX(column) -
-        this.viewportManager.getScrollX();
+      const bounds = this.getVisibleCellBounds(row, column);
 
-      const y =
-        GridConfig.HEADER_HEIGHT +
-        this.viewportManager.getRowY(row) -
-        this.viewportManager.getScrollY();
-
-      const width = this.viewportManager.getColumnWidth(column);
-      const height = this.viewportManager.getRowHeight(row);
-
-      const gridLeft = GridConfig.HEADER_WIDTH;
-      const gridTop = GridConfig.HEADER_HEIGHT;
-
-      let editorX = x;
-      let eidtorY = y;
-      let editorWidth = width;
-      let editorHeight = height;
-
-      if (editorX < gridLeft) {
-        editorWidth -= gridLeft - editorX;
-        editorX = gridLeft;
-      }
-
-      if (eidtorY < gridTop) {
-        editorHeight -= gridTop - eidtorY;
-        eidtorY = gridTop;
-      }
-
-      if (editorWidth > 0 && editorHeight > 0) {
-        this.cellEditor.move(editorX, eidtorY, editorWidth, editorHeight);
+      if (bounds.width > 0 && bounds.height > 0) {
+        this.cellEditor.move(bounds.x, bounds.y, bounds.width, bounds.height);
       } else {
         this.cellEditor.hide();
       }
@@ -152,6 +123,14 @@ export class Grid {
   };
 
   private resize(): void {
+    const bodyWidth = this.container.clientWidth - GridConfig.HEADER_WIDTH;
+    const bodyHeight =
+      this.container.clientHeight -
+      GridConfig.HEADER_HEIGHT -
+      GridConfig.STATUS_BAR_HEIGHT;
+
+    this.viewportManager.setViewportSize(bodyWidth, bodyHeight);
+
     this.renderer.resize(
       this.container.clientWidth,
       this.container.clientHeight,
@@ -359,20 +338,15 @@ export class Grid {
     const column = cellPosition.getColumnIndex();
     const value = this.dataStore.getCellValue(row, column);
 
-    const x =
-      GridConfig.HEADER_WIDTH +
-      this.viewportManager.getColumnX(column) -
-      this.viewportManager.getScrollX();
+    const bounds = this.getVisibleCellBounds(row, column);
 
-    const y =
-      GridConfig.HEADER_HEIGHT +
-      this.viewportManager.getRowY(row) -
-      this.viewportManager.getScrollY();
-
-    const width = this.viewportManager.getColumnWidth(column);
-    const height = this.viewportManager.getRowHeight(row);
-
-    this.cellEditor.show(x, y, width, height, String(value ?? ""));
+    this.cellEditor.show(
+      bounds.x,
+      bounds.y,
+      bounds.width,
+      bounds.height,
+      String(value ?? ""),
+    );
   };
 
   private handleEditorKeyDown = (event: KeyboardEvent): void => {
@@ -433,6 +407,8 @@ export class Grid {
       this.renderer.render();
       return;
     }
+
+    this.handleNavigation(event);
   };
 
   private updateSummary(): void {
@@ -453,5 +429,131 @@ export class Grid {
 
     this.renderer.setSummaryText(this.summaryText);
     this.renderer.render();
+  }
+
+  private handleNavigation(event: KeyboardEvent): void {
+    const range = this.selectionManager.getSelectionRange();
+
+    if (!range) {
+      return;
+    }
+
+    let row = range.getStartRow();
+    let column = range.getStartColumn();
+
+    switch (event.key) {
+      case "ArrowUp":
+        row--;
+        break;
+
+      case "ArrowDown":
+        row++;
+        break;
+
+      case "ArrowLeft":
+        column--;
+        break;
+
+      case "ArrowRight":
+        column++;
+        break;
+
+      case "Tab":
+        column += event.shiftKey ? -1 : 1;
+        break;
+
+      case "Enter":
+        row += event.shiftKey ? -1 : 1;
+        break;
+
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    row = Math.max(0, Math.min(GridConfig.ROW_COUNT - 1, row));
+    column = Math.max(0, Math.min(GridConfig.COLUMN_COUNT - 1, column));
+
+    this.selectionManager.selectCell(row, column);
+    this.scrollCellIntoView(row, column);
+    this.updateSummary();
+  }
+
+  private scrollCellIntoView(row: number, coloumn: number): void {
+    const cellLeft = this.viewportManager.getColumnX(coloumn);
+    const cellRight = cellLeft + this.viewportManager.getColumnWidth(coloumn);
+
+    const cellTop = this.viewportManager.getRowY(row);
+    const cellBottom = cellTop + this.viewportManager.getRowHeight(row);
+
+    const visibleLeft = this.container.scrollLeft;
+    const visibleRight =
+      visibleLeft + this.container.clientWidth - GridConfig.HEADER_WIDTH;
+
+    const visibleTop = this.container.scrollTop;
+    const visibleBottom =
+      visibleTop +
+      this.container.clientHeight -
+      GridConfig.HEADER_HEIGHT -
+      GridConfig.STATUS_BAR_HEIGHT;
+
+    if (cellLeft < visibleLeft) {
+      this.container.scrollLeft = cellLeft;
+    } else if (cellRight > visibleRight) {
+      this.container.scrollLeft =
+        cellRight - (this.container.clientWidth - GridConfig.HEADER_WIDTH);
+    }
+
+    if (cellTop < visibleTop) {
+      this.container.scrollTop = cellTop;
+    } else if (cellBottom > visibleBottom) {
+      this.container.scrollTop =
+        cellBottom -
+        (this.container.clientHeight -
+          GridConfig.HEADER_HEIGHT -
+          GridConfig.STATUS_BAR_HEIGHT);
+    }
+  }
+
+  private getVisibleCellBounds(row: number, column: number) {
+    let x =
+      GridConfig.HEADER_WIDTH +
+      this.viewportManager.getColumnX(column) -
+      this.viewportManager.getScrollX();
+
+    let y =
+      GridConfig.HEADER_HEIGHT +
+      this.viewportManager.getRowY(row) -
+      this.viewportManager.getScrollY();
+
+    let width = this.viewportManager.getColumnWidth(column);
+    let height = this.viewportManager.getRowHeight(row);
+
+    const bodyLeft = GridConfig.HEADER_WIDTH;
+    const bodyTop = GridConfig.HEADER_HEIGHT;
+    const bodyRight = this.container.clientWidth;
+    const bodyBottom =
+      this.container.clientHeight - GridConfig.STATUS_BAR_HEIGHT;
+
+    if (x < bodyLeft) {
+      width -= bodyLeft - x;
+      x = bodyLeft;
+    }
+
+    if (y < bodyTop) {
+      height -= bodyTop - y;
+      y = bodyTop;
+    }
+
+    if (x + width > bodyRight) {
+      width = bodyRight - x;
+    }
+
+    if (y + height > bodyBottom) {
+      height = bodyBottom - y;
+    }
+
+    return { x, y, width, height };
   }
 }

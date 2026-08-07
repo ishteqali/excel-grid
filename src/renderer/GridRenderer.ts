@@ -59,11 +59,14 @@ export class GridRenderer {
   }
   public render(): void {
     this.clear();
-    this.drawGridBody();
+
     this.drawHeadersBackground();
     this.drawHeaderSelection();
+    this.drawHeaderBorders();
     this.drawColumnHeaders();
     this.drawRowHeaders();
+    this.drawHeaderBorders();
+    this.drawGridBody();
     this.drawSummaryBar();
   }
   private clear(): void {
@@ -163,6 +166,14 @@ export class GridRenderer {
         x + width / 2,
         GridConfig.HEADER_HEIGHT / 2,
       );
+
+      this.context.strokeStyle = GridConfig.GRID_LINES_COLOR;
+      this.context.lineWidth = 1;
+
+      this.context.beginPath();
+      this.context.moveTo(x + width, 0);
+      this.context.lineTo(x + width, GridConfig.HEADER_HEIGHT);
+      this.context.stroke();
       x += width;
       columnIndex++;
     }
@@ -199,7 +210,13 @@ export class GridRenderer {
         GridConfig.HEADER_WIDTH / 2,
         y + rowHeight / 2,
       );
+      this.context.strokeStyle = GridConfig.GRID_LINES_COLOR;
+      this.context.lineWidth = 1;
 
+      this.context.beginPath();
+      this.context.moveTo(0, y + rowHeight);
+      this.context.lineTo(GridConfig.HEADER_WIDTH, y + rowHeight);
+      this.context.stroke();
       y += rowHeight;
       rowIndex++;
     }
@@ -488,5 +505,22 @@ export class GridRenderer {
 
   private getBodyBottom(): number {
     return GridConfig.HEADER_HEIGHT + this.bodyHeight;
+  }
+
+  private drawHeaderBorders(): void {
+    this.context.strokeStyle = GridConfig.GRID_LINES_COLOR;
+    this.context.lineWidth = 1;
+
+    this.context.beginPath();
+
+    // Bottom border of column header (Horizontal Line)
+    this.context.moveTo(0, GridConfig.HEADER_HEIGHT);
+    this.context.lineTo(this.getBodyRight(), GridConfig.HEADER_HEIGHT);
+
+    // Right border of row header (Vertical Line)
+    this.context.moveTo(GridConfig.HEADER_WIDTH, 0);
+    this.context.lineTo(GridConfig.HEADER_WIDTH, this.getBodyBottom());
+
+    this.context.stroke();
   }
 }
