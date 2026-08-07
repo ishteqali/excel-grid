@@ -9,6 +9,7 @@ import { GridDataStore } from "./data/GridDataStore";
 import { SelectionManager } from "./managers/SelectionManager";
 import { CellEditor } from "./editor/CellEditor";
 import { CommandManager } from "./commands/CommandManager";
+import { SummaryManager } from "./managers/SummaryManager";
 
 const canvas = document.getElementById("gridCanvas") as HTMLCanvasElement;
 const container = document.getElementById("gridContainer") as HTMLElement;
@@ -16,6 +17,7 @@ const scrollContent = document.getElementById("scrollContent") as HTMLElement;
 const selectionManager = new SelectionManager();
 const cellEditor = new CellEditor();
 const commandManager = new CommandManager();
+const summaryManager = new SummaryManager();
 
 const dataLoader = new JsonDataLoader();
 const employees = await dataLoader.load("/data/employees.json");
@@ -41,6 +43,7 @@ const grid = new Grid(
   dataStore,
   commandManager,
   cellEditor,
+  summaryManager,
 );
 
 grid.initialize();

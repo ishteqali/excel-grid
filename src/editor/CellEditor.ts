@@ -1,5 +1,3 @@
-import { GridConfig } from "../config/GridConfig";
-
 export class CellEditor {
   private readonly input: HTMLInputElement;
   constructor() {

@@ -32,4 +32,6 @@ export class GridConfig {
   static readonly COLUMN_RESIZE_MARGIN = 4;
 
   static readonly ROW_RESIZE_MARGIN = 4;
+
+  static readonly STATUS_BAR_HEIGHT = 20;
 }

@@ -9,6 +9,7 @@ import type { GridDataStore } from "../data/GridDataStore";
 import { EditCellCommand } from "../commands/EditCellCommand";
 import { ResizeColumnCommand } from "../commands/ResizeColumnCommand";
 import { ResizeRowCommand } from "../commands/ResizeRowCommand";
+import type { SummaryManager } from "../managers/SummaryManager";
 
 export class Grid {
   private readonly renderer: GridRenderer;
@@ -20,18 +21,21 @@ export class Grid {
   private readonly commandManager: CommandManager;
   private readonly cellEditor: CellEditor;
   private readonly dataStore: GridDataStore;
+  private readonly summaryManager: SummaryManager;
 
   private isSelecting: boolean;
   private selectionStart: CellPosition | null;
   private editingCell: CellPosition | null;
 
   private resizingColumn: number | null = null;
-  private resizeStartX = 0;
-  private resizeStartWidth = 0;
+  private resizeStartX: number = 0;
+  private resizeStartWidth: number = 0;
 
   private resizingRow: number | null = null;
-  private resizeStartY = 0;
-  private resizeStartHeight = 0;
+  private resizeStartY: number = 0;
+  private resizeStartHeight: number = 0;
+
+  private summaryText: string = "";
 
   constructor(
     renderer: GridRenderer,
@@ -43,6 +47,7 @@ export class Grid {
     dataStore: GridDataStore,
     commandManager: CommandManager,
     cellEditor: CellEditor,
+    summaryManager: SummaryManager,
   ) {
     this.renderer = renderer;
     this.viewportManager = viewportManager;
@@ -56,6 +61,7 @@ export class Grid {
     this.isSelecting = false;
     this.selectionStart = null;
     this.editingCell = null;
+    this.summaryManager = summaryManager;
     this.cellEditor
       .getInput()
       .addEventListener("keydown", this.handleEditorKeyDown);
@@ -202,12 +208,14 @@ export class Grid {
     if (this.viewportManager.isRowHeader(x, y)) {
       const rowIndex = this.viewportManager.getRowAtPoint(y);
       this.selectionManager.selectRow(rowIndex);
+      this.updateSummary();
       this.renderer.render();
       return;
     }
     if (this.viewportManager.isColumnHeader(x, y)) {
       const columnIndex = this.viewportManager.getColumnPoint(x);
       this.selectionManager.selectColumn(columnIndex);
+      this.updateSummary();
       this.renderer.render();
       return;
     }
@@ -225,7 +233,7 @@ export class Grid {
       cellPosition.getRowIndex(),
       cellPosition.getColumnIndex(),
     );
-
+    this.updateSummary();
     this.renderer.render();
   };
 
@@ -289,7 +297,7 @@ export class Grid {
       return;
     }
     this.selectionManager.selectRange(this.selectionStart, currentCell);
-
+    this.updateSummary();
     this.renderer.render();
   };
 
@@ -426,4 +434,24 @@ export class Grid {
       return;
     }
   };
+
+  private updateSummary(): void {
+    const range = this.selectionManager.getSelectionRange();
+    if (!range) {
+      this.summaryText = "";
+      return;
+    }
+
+    const summary = this.summaryManager.calculate(range, this.dataStore);
+
+    this.summaryText =
+      `Count: ${summary.count}    ` +
+      `Min: ${summary.min ?? "-"}    ` +
+      `Max: ${summary.max ?? "-"}    ` +
+      `Sum: ${summary.sum}    ` +
+      `Average: ${summary.average.toFixed(2)}`;
+
+    this.renderer.setSummaryText(this.summaryText);
+    this.renderer.render();
+  }
 }

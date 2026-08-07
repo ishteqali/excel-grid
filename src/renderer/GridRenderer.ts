@@ -10,8 +10,13 @@ export class GridRenderer {
   private readonly dataStore: GridDataStore;
   private readonly selectionManager: SelectionManager;
 
-  private viewportWidth: number;
-  private viewportHeight: number;
+  private canvasWidth: number;
+  private canvasHeight: number;
+
+  private bodyWidth: number;
+  private bodyHeight: number;
+
+  private summaryText: string;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -28,12 +33,15 @@ export class GridRenderer {
     this.context = context;
     this.dataStore = dataStore;
     this.selectionManager = selectionManager;
-    this.viewportWidth = 0;
-    this.viewportHeight = 0;
+    this.canvasWidth = 0;
+    this.canvasHeight = 0;
+    this.bodyWidth = 0;
+    this.bodyHeight = 0;
+    this.summaryText = "";
   }
   public resize(width: number, height: number): void {
-    this.viewportWidth = width;
-    this.viewportHeight = height;
+    this.canvasWidth = width;
+    this.canvasHeight = height;
 
     const dpr = window.devicePixelRatio || 1;
     this.canvas.style.width = `${width}px`;
@@ -44,35 +52,43 @@ export class GridRenderer {
 
     this.context.setTransform(1, 0, 0, 1, 0, 0);
     this.context.scale(dpr, dpr);
+
+    this.bodyWidth = width - GridConfig.HEADER_WIDTH;
+    this.bodyHeight =
+      height - GridConfig.HEADER_HEIGHT - GridConfig.STATUS_BAR_HEIGHT;
   }
   public render(): void {
     this.clear();
     this.drawGridBody();
     this.drawHeadersBackground();
+    this.drawHeaderSelection();
     this.drawColumnHeaders();
     this.drawRowHeaders();
+    this.drawSummaryBar();
   }
   private clear(): void {
-    this.context.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
+    this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
     this.context.fillStyle = GridConfig.CANVAS_BACKGROUND_COLOR;
-    this.context.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+    this.context.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
   }
 
   private drawHeadersBackground(): void {
     this.context.fillStyle = GridConfig.HEADERS_BACKGROUND_COLOR;
+
     // Column Header Background
     this.context.fillRect(
       GridConfig.HEADER_WIDTH,
       0,
-      this.viewportWidth - GridConfig.HEADER_WIDTH,
+      this.bodyWidth,
       GridConfig.HEADER_HEIGHT,
     );
+    this.context.fillStyle = GridConfig.HEADERS_BACKGROUND_COLOR;
     // Row Header Background
     this.context.fillRect(
       0,
       GridConfig.HEADER_HEIGHT,
       GridConfig.HEADER_WIDTH,
-      this.viewportHeight - GridConfig.HEADER_HEIGHT,
+      this.bodyHeight,
     );
     // Top Left Intersection
     this.context.fillRect(
@@ -99,9 +115,9 @@ export class GridRenderer {
     let rowIndex = firstRow;
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
-    while (y <= this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
+    while (y <= this.getBodyBottom() && rowIndex < GridConfig.ROW_COUNT) {
       this.context.moveTo(GridConfig.HEADER_WIDTH, y);
-      this.context.lineTo(this.viewportWidth, y);
+      this.context.lineTo(this.getBodyRight(), y);
       y += this.viewportManager.getRowHeight(rowIndex);
       rowIndex++;
     }
@@ -118,9 +134,9 @@ export class GridRenderer {
     let columnIndex = firstColumn;
     let x = GridConfig.HEADER_WIDTH - columnOffset;
 
-    while (x <= this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
+    while (x <= this.getBodyRight() && columnIndex < GridConfig.COLUMN_COUNT) {
       this.context.moveTo(x, GridConfig.HEADER_HEIGHT);
-      this.context.lineTo(x, this.viewportHeight);
+      this.context.lineTo(x, this.getBodyBottom());
 
       x += this.viewportManager.getColumnWidth(columnIndex);
       columnIndex++;
@@ -139,7 +155,7 @@ export class GridRenderer {
     let columnIndex = firstVisibleColumn;
     let x = GridConfig.HEADER_WIDTH - columnOffset;
 
-    while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
+    while (x < this.getBodyRight() && columnIndex < GridConfig.COLUMN_COUNT) {
       const width = this.viewportManager.getColumnWidth(columnIndex);
 
       this.context.fillText(
@@ -175,7 +191,7 @@ export class GridRenderer {
     let rowIndex = firstVisibleRow;
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
-    while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
+    while (y < this.getBodyBottom() && rowIndex < GridConfig.ROW_COUNT) {
       const rowHeight = this.viewportManager.getRowHeight(rowIndex);
 
       this.context.fillText(
@@ -196,7 +212,7 @@ export class GridRenderer {
     this.context.rect(
       GridConfig.HEADER_WIDTH,
       0,
-      this.viewportWidth - GridConfig.HEADER_WIDTH,
+      this.bodyWidth,
       GridConfig.HEADER_HEIGHT,
     );
 
@@ -210,7 +226,7 @@ export class GridRenderer {
       0,
       GridConfig.HEADER_HEIGHT,
       GridConfig.HEADER_WIDTH,
-      this.viewportHeight - GridConfig.HEADER_HEIGHT,
+      this.bodyHeight,
     );
 
     this.context.clip();
@@ -228,8 +244,8 @@ export class GridRenderer {
     this.context.rect(
       GridConfig.HEADER_WIDTH,
       GridConfig.HEADER_HEIGHT,
-      this.viewportWidth - GridConfig.HEADER_WIDTH,
-      this.viewportHeight - GridConfig.HEADER_HEIGHT,
+      this.bodyWidth,
+      this.bodyHeight,
     );
 
     this.context.clip();
@@ -258,13 +274,13 @@ export class GridRenderer {
     let rowIndex = firstVisibleRow;
     let y = GridConfig.HEADER_HEIGHT - rowOffset;
 
-    while (y < this.viewportHeight && rowIndex < GridConfig.ROW_COUNT) {
+    while (y < this.getBodyBottom() && rowIndex < GridConfig.ROW_COUNT) {
       const rowHeight = this.viewportManager.getRowHeight(rowIndex);
 
       let columnIndex = firstVisibleColumn;
       let x = GridConfig.HEADER_WIDTH - columnOffset;
 
-      while (x < this.viewportWidth && columnIndex < GridConfig.COLUMN_COUNT) {
+      while (x < this.getBodyRight() && columnIndex < GridConfig.COLUMN_COUNT) {
         const columnWidth = this.viewportManager.getColumnWidth(columnIndex);
         const value = this.dataStore.getCellValue(rowIndex, columnIndex);
 
@@ -306,12 +322,7 @@ export class GridRenderer {
         this.viewportManager.getScrollY();
       const height = this.viewportManager.getRowHeight(row);
 
-      this.styleSelection(
-        GridConfig.HEADER_WIDTH,
-        y,
-        this.viewportWidth - GridConfig.HEADER_WIDTH,
-        height,
-      );
+      this.styleSelection(GridConfig.HEADER_WIDTH, y, this.bodyWidth, height);
       return;
     }
     if (selectionType === "Column") {
@@ -321,12 +332,7 @@ export class GridRenderer {
         this.viewportManager.getColumnX(column) -
         this.viewportManager.getScrollX();
       const width = this.viewportManager.getColumnWidth(column);
-      this.styleSelection(
-        x,
-        GridConfig.HEADER_HEIGHT,
-        width,
-        this.viewportHeight - GridConfig.HEADER_HEIGHT,
-      );
+      this.styleSelection(x, GridConfig.HEADER_HEIGHT, width, this.bodyHeight);
       return;
     }
 
@@ -374,5 +380,113 @@ export class GridRenderer {
       text = text.slice(0, -1);
     }
     return text;
+  }
+
+  private drawHeaderSelection(): void {
+    const range = this.selectionManager.getSelectionRange();
+
+    if (!range) {
+      return;
+    }
+
+    this.context.fillStyle = GridConfig.SELECTION_BACKGROUND_COLOR;
+
+    this.context.save();
+
+    this.applyColumnHeaderClip();
+    let x =
+      GridConfig.HEADER_WIDTH +
+      this.viewportManager.getColumnX(range.getStartColumn()) -
+      this.viewportManager.getScrollX();
+
+    for (
+      let column = range.getStartColumn();
+      column <= range.getEndColumn();
+      column++
+    ) {
+      const width = this.viewportManager.getColumnWidth(column);
+      this.context.fillRect(x, 0, width, GridConfig.HEADER_HEIGHT);
+
+      // Selection Border Line Column
+      this.context.strokeStyle = GridConfig.SELECTION_BORDER_COLOR;
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(x, GridConfig.HEADER_HEIGHT - 1);
+      this.context.lineTo(x + width, GridConfig.HEADER_HEIGHT - 1);
+      this.context.stroke();
+
+      x += width;
+    }
+    this.context.restore();
+
+    this.context.save();
+    this.applyRowHeaderClip();
+    let y =
+      GridConfig.HEADER_HEIGHT +
+      this.viewportManager.getRowY(range.getStartRow()) -
+      this.viewportManager.getScrollY();
+
+    for (let row = range.getStartRow(); row <= range.getEndRow(); row++) {
+      const height = this.viewportManager.getRowHeight(row);
+
+      this.context.fillRect(0, y, GridConfig.HEADER_WIDTH, height);
+
+      // Selection Border Line Column
+      this.context.strokeStyle = GridConfig.SELECTION_BORDER_COLOR;
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(GridConfig.HEADER_WIDTH - 1, y);
+      this.context.lineTo(GridConfig.HEADER_WIDTH - 1, y + height);
+      this.context.stroke();
+
+      y += height;
+    }
+    this.context.restore();
+  }
+
+  public setSummaryText(summaryText: string): void {
+    this.summaryText = summaryText;
+  }
+
+  private drawSummaryBar(): void {
+    this.context.fillStyle = "#ffffff";
+
+    this.context.fillRect(
+      0,
+      this.canvasHeight - GridConfig.STATUS_BAR_HEIGHT,
+      this.canvasWidth,
+      GridConfig.STATUS_BAR_HEIGHT,
+    );
+
+    this.context.strokeStyle = "#d9d9d9";
+
+    this.context.beginPath();
+    this.context.moveTo(0, this.canvasHeight - GridConfig.STATUS_BAR_HEIGHT);
+    this.context.lineTo(
+      this.canvasWidth,
+      this.canvasHeight - GridConfig.STATUS_BAR_HEIGHT,
+    );
+    this.context.stroke();
+
+    this.context.fillStyle = "#222";
+    this.context.font = "13px Calibri";
+    this.context.textAlign = "left";
+    this.context.textBaseline = "middle";
+
+    this.context.fillText(
+      this.summaryText,
+      10,
+      this.canvasHeight - GridConfig.STATUS_BAR_HEIGHT / 2,
+    );
+
+    console.log(this.summaryText);
+  }
+
+  private getBodyRight(): number {
+    return GridConfig.HEADER_WIDTH + this.bodyWidth;
+  }
+
+  private getBodyBottom(): number {
+    return GridConfig.HEADER_HEIGHT + this.bodyHeight;
   }
 }
